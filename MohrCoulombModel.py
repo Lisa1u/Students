@@ -1,10 +1,6 @@
 import numpy as np
 
-class SmoothMohrCoulombPlaneStrain:
-    """
-    Сглаженный Мора–Кулон для плоской деформации.
-    σzz исключено явно и учитывается неявно через εzz = 0.
-    """
+class DruckerPragerModel:
 
     def __init__(self, sx, sy, tau_xy, nu, phi_deg, c):
         # напряжения (атрибуты)
@@ -16,6 +12,9 @@ class SmoothMohrCoulombPlaneStrain:
         self.nu = nu
         self.phi = np.radians(phi_deg)
         self.c = c
+
+        self.M = (6.0 * np.sin(self.phi)) / (3.0 - np.sin(self.phi))
+        self.k = (6.0 * self.c * np.cos(self.phi)) / (3.0 - np.sin(self.phi))
 
     # --------------------------------------------------
     # Неявное σzz из условия plane strain
@@ -57,7 +56,7 @@ class SmoothMohrCoulombPlaneStrain:
     # Функция текучести (сглаженная)
     # --------------------------------------------------
     def _yield_function(self, p, q):
-        return q + p * np.sin(self.phi) - self.c * np.cos(self.phi)
+        return q - self.M * p - self.k
 
     # --------------------------------------------------
     # Угол главных напряжений (из trial-состояния)
@@ -99,7 +98,7 @@ class SmoothMohrCoulombPlaneStrain:
             alpha = 0.0
         else:
             # новое q на поверхности текучести
-            q_new = self.c * np.cos(self.phi) - p_tr * np.sin(self.phi)
+            q_new = self.M * p_tr + self.k
             alpha = q_new / q_tr if q_tr > 1e-14 else 0.0
 
         # масштабирование девиатора
@@ -119,12 +118,12 @@ class SmoothMohrCoulombPlaneStrain:
 
         return sx_new, sy_new, tau_new
 
-sx = 1
-sy = 1
-tau = 1
+sx = 100
+sy = 100
+tau = 0
 fi = 30
-c = 0
+c = 1
 nu = 0.3
 
-model = SmoothMohrCoulombPlaneStrain(sx, sy, tau, nu, fi, c)
+model = DruckerPragerModel(sx, sy, tau, nu, fi, c)
 print(model.return_mapping())
